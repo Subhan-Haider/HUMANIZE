@@ -1,0 +1,54 @@
+function pass_40_phantom_markers(text: string): string {
+    // LAYER 1: Zero-Width Markers (invisible joiners/spaces)
+    const phantoms = [
+        "\u200C", // ZWNJ: Zero Width Non-Joiner
+        "\u200B", // ZWSP: Zero Width Space
+        "\u200D", // ZWJ: Zero Width Joiner
+        "\u2060", // WJ: Word Joiner
+        "\u200E", // LRM: Left-to-Right Mark
+        "\u200F"  // RLM: Right-to-Left Mark
+    ];
+
+    // LAYER 2: Variation Selectors (force specific glyph rendering - invisible to humans)
+    const variationSelectors = [
+        "\uFE00", "\uFE01", "\uFE02", "\uFE03", "\uFE04", "\uFE05"
+    ];
+
+    // LAYER 3: Directional Formatting (creates invisible boundaries)
+    const directional = [
+        "\u202A", // Left-to-Right Embedding
+        "\u202B", // Right-to-Left Embedding
+        "\u202C"  // Pop Directional Formatting
+    ];
+
+    let chars = text.split('');
+    let processed = "";
+    
+    for (let i = 0; i < chars.length; i++) {
+        processed += chars[i];
+        
+        // Inject phantoms after spaces and punctuation (40% chance)
+        if (chars[i] === ' ' || chars[i] === '.' || chars[i] === ',') {
+            if (Math.random() < 0.4) { 
+                processed += randomElement(phantoms);
+            }
+        }
+        
+        // Inject variation selectors on vowels (20% chance) - forces glyph variants
+        if (/[aeiouAEIOU]/.test(chars[i]) && Math.random() < 0.2) {
+            processed += randomElement(variationSelectors);
+        }
+        
+        // Inject soft hyphens in long words (breaks tokenization invisibly)
+        if (i > 0 && i < chars.length - 1 && /[a-z]/.test(chars[i]) && Math.random() < 0.15) {
+            processed += "\u00AD"; // Soft Hyphen (invisible unless word breaks)
+        }
+        
+        // Inject directional marks randomly (creates invisible text boundaries)
+        if (Math.random() < 0.05) {
+            processed += randomElement(directional);
+        }
+    }
+    
+    return processed;
+}

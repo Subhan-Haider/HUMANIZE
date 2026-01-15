@@ -19,29 +19,44 @@ class NeuralTextHumanizer:
     Follows a multi-pass architecture to bypass AI detection.
     """
     def __init__(self, model_name="Vamsi/T5_Paraphrase_Paws", device=None):
-        if device is None:
-            self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        else:
-            self.device = device
-            
-        print(f"Loading Neural Humanizer on {self.device}...")
+        self.device = device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+        print(f"Initializing NeuralTextHumanizer on {self.device}...")
         
-        # Initialize pattern breakers
-        self.pattern_breaker = PatternBreaker()
-        self.ngram_diversifier = NgramDiversifier()
-        self.fingerprint_scrambler = FingerprintScrambler()
-        self.semantic_shuffler = SemanticShuffler()
-        self.ensemble = EnsembleHumanizer()
-        self.blender = MarkovTextBlender()
-        
-        # Try to load T5 as fallback
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
             self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self.device)
-            print("Model loaded.")
         except Exception as e:
-            print(f"Failed to load model {model_name}: {e}")
+            print(f"Warning: Local model failed to load: {e}. Using API-only mode.")
+            self.tokenizer = None
             self.model = None
+
+        # Load external resources
+        self.pattern_breaker = PatternBreaker()
+        self.diversifier = NgramDiversifier()
+        self.fingerprint_scrambler = FingerprintScrambler()
+        self.semantic_shuffler = SemanticShuffler()
+        self.ensemble = EnsembleHumanizer() # Keep ensemble if it's used elsewhere
+        self.blender = MarkovTextBlender()
+        
+        # Ghost Protocol v17000.0 Resources
+        self.common_words_set = self._load_google_10k()
+        self.rare_vocab_set = self._load_rare_vocab()
+
+    def _load_google_10k(self):
+        try:
+            path = "C:\\Users\\setup\\Pictures\\AI-Text-Humanizer-App-main\\google_10000.txt"
+            with open(path, 'r', encoding='utf-8') as f:
+                return set([line.strip().lower() for line in f if line.strip()])
+        except:
+            return set()
+
+    def _load_rare_vocab(self):
+        try:
+            path = "C:\\Users\\setup\\Pictures\\AI-Text-Humanizer-App-main\\transformer\\rare_vocab.txt"
+            with open(path, 'r', encoding='utf-8') as f:
+                return set([line.strip().lower() for line in f if line.strip()])
+        except:
+            return set()
 
     def humanize(self, text, stealth_level=3, use_artifacts=False, tone="Balanced", audience="General", preserve_formatting=True, use_emojis=False):
         """
@@ -207,6 +222,15 @@ class NeuralTextHumanizer:
             except Exception as e:
                 print(f"  ✗ Pass 11 failed: {e}")
 
+        # Pass 18: Commonality Nullifier (Ghost Protocol v17000.0) - MOVED UP
+        if stealth_level >= 5:
+            print("→ Running Pass 18: Commonality Nullifier...")
+            try:
+                text = self._pass_18_commonality_nullifier(text)
+                print(f"  ✓ Pass 18 complete")
+            except Exception as e:
+                print(f"  ✗ Pass 18 failed: {e}")
+
         # Pass 12: Human Jitter (Subtle)
         if stealth_level >= 4:
             print("→ Running Pass 12: Human Jitter...")
@@ -215,15 +239,6 @@ class NeuralTextHumanizer:
                 print(f"  ✓ Pass 12 complete")
             except Exception as e:
                 print(f"  ✗ Pass 12 failed: {e}")
-
-        # Pass 14: Token Shielder (AGGRESSIVE ENCODING SHIELD)
-        if stealth_level >= 5:
-            print("→ Running Pass 14: Token Shielder...")
-            try:
-                text = self._pass_14_token_shielder(text, level=stealth_level)
-                print(f"  ✓ Pass 14 complete")
-            except Exception as e:
-                print(f"  ✗ Pass 14 failed: {e}")
 
         # Pass 15: Linguistic Shatter (NEW - NUCLEAR)
         if stealth_level >= 5:
@@ -242,6 +257,24 @@ class NeuralTextHumanizer:
                 print(f"  ✓ Pass 16 complete")
             except Exception as e:
                 print(f"  ✗ Pass 16 failed: {e}")
+
+        # Pass 19: Cyrillic Inversion (Ghost Protocol v17000.0)
+        if stealth_level >= 5:
+            print("→ Running Pass 19: Cyrillic Inversion...")
+            try:
+                text = self._pass_19_cyrillic_inversion(text)
+                print(f"  ✓ Pass 19 complete")
+            except Exception as e:
+                print(f"  ✗ Pass 19 failed: {e}")
+
+        # Pass 14: Token Shielder (AGGRESSIVE ENCODING SHIELD)
+        if stealth_level >= 5:
+            print("→ Running Pass 14: Token Shielder...")
+            try:
+                text = self._pass_14_token_shielder(text, level=stealth_level)
+                print(f"  ✓ Pass 14 complete")
+            except Exception as e:
+                print(f"  ✗ Pass 14 failed: {e}")
 
         # Artifact Injection (Invisible Noise - CRITICAL FOR BYPASS)
         if use_artifacts or stealth_level >= 3:
@@ -975,6 +1008,7 @@ class NeuralTextHumanizer:
         """
         Pass 14: Token Shielder (Encoding Sabotage - REFINED)
         Inserts invisible markers strategically to block tokenization.
+        Ghost Protocol Update: Injects Word Joiners (\u2060) into 95% of word boundaries at Level 5.
         """
         if level < 3: return text
         
@@ -982,20 +1016,24 @@ class NeuralTextHumanizer:
         shielded_words = []
         bombs = ["\u200B", "\u200C", "\u200D", "\u2060"]
         
-        for word in words:
+        for i, word in enumerate(words):
             # Chance based on level
-            chance = 0.90 if level >= 5 else 0.50
+            chance = 0.95 if level >= 5 else 0.50
             
-            if random.random() < chance and len(word) > 2:
-                # Insert 2-3 bombs at random positions instead of EVERY character
+            if random.random() < chance and len(word) > 1:
+                # Insert 2-3 bombs at random positions
                 chars = list(word)
-                num_bombs = random.randint(1, 2) if level < 5 else random.randint(2, 3)
+                num_bombs = random.randint(1, 2) if level < 5 else random.randint(2, 4)
                 for _ in range(num_bombs):
                     idx = random.randint(1, len(chars)-1)
                     chars.insert(idx, random.choice(bombs))
-                shielded_words.append("".join(chars))
-            else:
-                shielded_words.append(word)
+                word = "".join(chars)
+            
+            # THE N-GRAM NULLIFIER: Inject WJ into word boundary
+            if level >= 5 and i < len(words) - 1 and random.random() < 0.95:
+                word += "\u2060"
+                
+            shielded_words.append(word)
                 
         return " ".join(shielded_words)
 
@@ -1179,6 +1217,69 @@ class NeuralTextHumanizer:
             entropy_paragraphs.append(" ".join(words))
             
         return "\n\n".join(entropy_paragraphs)
+
+    def _pass_18_commonality_nullifier(self, text):
+        """
+        Pass 18: Commonality Nullifier (Ghost Protocol v17000.0)
+        Targets GPTZero's Commonality Engine by replacing common words with rare synonyms.
+        """
+        if not self.common_words_set or not self.rare_vocab_set:
+            return text
+            
+        words = text.split()
+        new_words = []
+        
+        for word in words:
+            clean_word = word.lower().strip('.,!?')
+            if clean_word in self.common_words_set and random.random() < 0.3:
+                # Try to find a rare synonym
+                syns = self._get_synonyms_simple(clean_word)
+                rare_syns = [s for s in syns if s.lower() in self.rare_vocab_set]
+                
+                if rare_syns:
+                    replacement = random.choice(rare_syns)
+                    # Preserve case
+                    if word[0].isupper():
+                        replacement = replacement.capitalize()
+                    new_words.append(replacement)
+                else:
+                    new_words.append(word)
+            else:
+                new_words.append(word)
+                
+        return " ".join(new_words)
+
+    def _get_synonyms_simple(self, word):
+        """Simple synonym lookup using WordNet."""
+        from nltk.corpus import wordnet
+        synonyms = set()
+        for syn in wordnet.synsets(word):
+            for lemma in syn.lemmas():
+                synonyms.add(lemma.name().replace('_', ' '))
+        return list(synonyms)
+
+    def _pass_19_cyrillic_inversion(self, text):
+        """
+        Pass 19: Cyrillic Inversion (Ghost Protocol v17000.0)
+        Replaces 20% of 'a', 'e', and 'o' with their Cyrillic homoglyphs.
+        """
+        char_map = {
+            'a': 'а', # U+0430
+            'e': 'е', # U+0435
+            'o': 'о', # U+043E
+            'A': 'А', # U+0410
+            'E': 'Е', # U+0415
+            'O': 'О'  # U+041E
+        }
+        
+        result = []
+        for char in text:
+            if char in char_map and random.random() < 0.20:
+                result.append(char_map[char])
+            else:
+                result.append(char)
+                
+        return "".join(result)
     def _pass_17_emoji_dynamics(self, text, tone="Balanced"):
         """Pass 17: Inject human-like emojis based on sentiment/tone."""
         sentences = nltk.sent_tokenize(text)
